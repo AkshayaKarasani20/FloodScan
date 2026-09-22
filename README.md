@@ -1,4 +1,4 @@
-﻿# 🌊 HydroVision
+﻿# 🌊 FloodScan
 
 An AI-powered flood detection system that identifies flooded regions from satellite images using a U-Net deep learning model.
 
