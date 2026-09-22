@@ -434,15 +434,3 @@ AI-Powered Satellite Flood Detection
         file_name="HydroVision_Report.txt",
         mime="text/plain"
     )
-
-
-# ============================================================
-# FOOTER
-# ============================================================
-
-st.divider()
-
-st.caption(
-    "🌊 HydroVision · AI-Powered Flood Detection · "
-    "U-Net + TensorFlow + Streamlit"
-)
