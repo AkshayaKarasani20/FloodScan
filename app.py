@@ -1,21 +1,12 @@
-# =====================================
-# IMPORTS
-# =====================================
-
-import io
-import zipfile
-
-from PIL import Image
 import streamlit as st
+from datetime import datetime
 
-try:
-    from src.predict import predict_image
-except Exception as e:
-    st.exception(e)
-    st.stop()
-    # =====================================
+from src.predict import predict_image
+
+
+# ============================================================
 # PAGE CONFIG
-# =====================================
+# ============================================================
 
 st.set_page_config(
     page_title="HydroVision",
@@ -23,359 +14,435 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-# =====================================
+
+
+# ============================================================
 # SESSION STATE
-# =====================================
+# ============================================================
 
 if "result" not in st.session_state:
     st.session_state.result = None
-    # =====================================
-# COLORS
-# =====================================
 
-COLORS = {
+if "uploaded_name" not in st.session_state:
+    st.session_state.uploaded_name = None
 
-    "bg": "#0B0F19",
-    "sidebar": "#151B26",
-    "card": "#1B2230",
-    "text": "#F8FAFC",
-    "secondary": "#94A3B8",
-    "accent": "#4F9DFF"
-
-}# =====================================
-# CSS
-# =====================================
-
-st.markdown(
-f"""
-<style>
-
-/* App */
-
-.stApp{{
-    background:{COLORS["bg"]};
-    color:{COLORS["text"]};
-}}
-
-.block-container{{
-    max-width:1100px;
-    padding-top:1rem;
-}}
+if "history" not in st.session_state:
+    st.session_state.history = []
 
 
-/* Sidebar */
-
-section[data-testid="stSidebar"]{{
-    background:{COLORS["sidebar"]};
-    border-right:1px solid #2A3345;
-}}
-
-
-/* Text */
-
-h1,h2,h3,h4,h5,h6,p,label,span,div{{
-    color:{COLORS["text"]};
-}}
-
-
-/* Upload Box */
-
-div[data-testid="stFileUploader"]{{
-    background:{COLORS["card"]};
-    border:1px solid #2D3648;
-    border-radius:15px;
-    padding:18px;
-}}
-
-
-/* Upload Button */
-
-.stFileUploader button{{
-    background:#232C3B;
-    color:white;
-    border-radius:25px;
-    border:none;
-    font-weight:600;
-}}
-
-.stFileUploader button:hover{{
-    background:#2E3B50;
-}}
-
-
-/* Buttons */
-
-.stButton > button,
-.stDownloadButton > button{{
-    background:{COLORS["accent"]};
-    color:white;
-    border:none;
-    border-radius:10px;
-}}
-
-.stButton > button:hover,
-.stDownloadButton > button:hover{{
-    opacity:0.9;
-}}
-
-
-/* Expanders */
-
-.streamlit-expanderHeader{{
-    font-weight:600;
-}}
-
-hr{{
-    border:1px solid #263041;
-}}
-
-</style>
-""",
-unsafe_allow_html=True
-)
-# =====================================
+# ============================================================
 # SIDEBAR
-# =====================================
+# ============================================================
 
 with st.sidebar:
 
     st.title("🌊 HydroVision")
 
-    st.caption("Satellite-Based Flood Detection & Risk Assessment")
+    st.caption("AI-Powered Flood Detection & Risk Assessment")
 
     st.divider()
 
-    with st.expander("ⓘ About FloodGuard AI"):
+    # --------------------------------------------------------
+    # NEW ANALYSIS
+    # --------------------------------------------------------
 
-        st.write("""
-FloodGuard AI detects flooded regions from satellite imagery using an AI segmentation model.
+    if st.button(
+        "＋ New Analysis",
+        use_container_width=True
+    ):
+        st.session_state.result = None
+        st.session_state.uploaded_name = None
+        st.rerun()
 
-The system provides:
+    # --------------------------------------------------------
+    # RECENT
+    # --------------------------------------------------------
 
-• Flood Overlay
+    st.subheader("Recent")
 
-• Flood Mask
+    if not st.session_state.history:
 
-• Flood Coverage
+        st.caption("No analyses yet.")
 
-• Risk Level
-""")
+    else:
 
-    with st.expander("🤖 AI System"):
-
-        st.write("""
-Model : U-Net
-
-Framework : TensorFlow / Keras
-
-Input : 256 × 256 Satellite Image
-
-Task : Binary Segmentation
-""")
-
-    with st.expander("🛰 How It Works"):
-
-        st.write("""
-1. Upload a satellite image
-
-2. AI preprocesses the image
-
-3. Flood regions are detected
-
-4. Flood analysis is generated
-""")
-
-    with st.expander("📊 Model Information"):
-
-        st.write("""
-• Deep Learning
-
-• U-Net Architecture
-
-• Satellite Image Analysis
-
-• Binary Segmentation
-""")
-
-    with st.expander("🔄 New Analysis"):
-
-        if st.button(
-            "Start New Analysis",
-            use_container_width=True
+        for item in reversed(
+            st.session_state.history[-8:]
         ):
-            st.session_state.result = None
+            st.caption("• " + item)
+
+    st.divider()
+
+    # --------------------------------------------------------
+    # ABOUT HYDROVISION
+    # --------------------------------------------------------
+
+    with st.expander("About HydroVision"):
+
+        st.write(
+            "HydroVision is an AI-powered flood detection "
+            "system that analyzes satellite imagery to "
+            "identify possible flood-affected regions."
+        )
+
+    # --------------------------------------------------------
+    # AI SYSTEM
+    # --------------------------------------------------------
+
+    with st.expander("AI System"):
+
+        st.write(
+            """
+            Model: U-Net
+
+            Framework: TensorFlow / Keras
+
+            Input Size: 256 × 256
+
+            Task: Binary Segmentation
+            """
+        )
+
+    # --------------------------------------------------------
+    # HOW IT WORKS
+    # --------------------------------------------------------
+
+    with st.expander("How It Works"):
+
+        st.write(
+            """
+            1. Upload a satellite image
+
+            2. The image is preprocessed
+
+            3. The U-Net model predicts flood regions
+
+            4. Flood coverage is calculated
+
+            5. A risk level is generated
+
+            6. A recommendation is provided
+            """
+        )
+
+    # --------------------------------------------------------
+    # MODEL INFORMATION
+    # --------------------------------------------------------
+
+    with st.expander("Model Information"):
+
+        st.write("Model: U-Net")
+
+        st.write("Input: 256 × 256 satellite image")
+
+        st.write("Framework: TensorFlow / Keras")
+
+        st.write("Task: Binary flood segmentation")
+
+        st.write("Segmentation threshold: 0.50")
+
+
+# ============================================================
+# CENTERED HEADER
+# ============================================================
+
+left, center, right = st.columns([1, 2, 1])
+
+with center:
+
+    st.title("🌊 HydroVision")
+
+    st.caption(
+        "AI-Powered Satellite Flood Detection & Risk Assessment"
+    )
+
+
+# ============================================================
+# WELCOME MESSAGE
+# ============================================================
+
+if st.session_state.result is None:
+
+    left, center, right = st.columns([1, 3, 1])
+
+    with center:
+
+        st.subheader(
+            "What can I help you analyze?"
+        )
+
+        st.write(
+            "Upload a satellite image and let HydroVision "
+            "detect possible flood-affected regions."
+        )
+
+
+st.write("")
+
+
+# ============================================================
+# CENTERED UPLOAD AREA
+# ============================================================
+
+left, center, right = st.columns([2, 5, 2])
+
+with center:
+
+    upload_col, button_col = st.columns(
+        [7, 1],
+        vertical_alignment="bottom"
+    )
+
+    # --------------------------------------------------------
+    # IMAGE UPLOAD
+    # --------------------------------------------------------
+
+    with upload_col:
+
+        uploaded_file = st.file_uploader(
+            "📎 Upload satellite image",
+            type=[
+                "jpg",
+                "jpeg",
+                "png",
+                "webp",
+                "tif",
+                "tiff"
+            ],
+            label_visibility="collapsed"
+        )
+
+    # --------------------------------------------------------
+    # ANALYZE BUTTON
+    # --------------------------------------------------------
+
+    with button_col:
+
+        analyze = st.button(
+            "➤",
+            use_container_width=True,
+            help="Analyze satellite image"
+        )
+
+
+# ============================================================
+# ANALYZE IMAGE
+# ============================================================
+
+if uploaded_file is not None and analyze:
+
+    with st.spinner(
+        "HydroVision is analyzing the satellite image..."
+    ):
+
+        try:
+
+            result = predict_image(uploaded_file)
+
+            st.session_state.result = result
+
+            st.session_state.uploaded_name = (
+                uploaded_file.name
+            )
+
+            # ------------------------------------------------
+            # ADD TO HISTORY
+            # ------------------------------------------------
+
+            timestamp = datetime.now().strftime(
+                "%d %b %Y, %I:%M %p"
+            )
+
+            history_item = (
+                f"{uploaded_file.name} — {timestamp}"
+            )
+
+            st.session_state.history.append(
+                history_item
+            )
+
             st.rerun()
-# =====================================
-# HEADER
-# =====================================
 
-st.markdown(
-"""
-# 🌊 HydroVision
+        except Exception as e:
 
-Satellite-Based Flood Detection & Risk Assessment
-"""
-)
-# =====================================
-# IMAGE UPLOAD
-# =====================================
+            st.error(
+                "Unable to analyze the uploaded image."
+            )
 
-uploaded_file = st.file_uploader(
-    "📤 Upload Satellite Image",
-    type=[
-        "png",
-        "jpg",
-        "jpeg",
-        "tif",
-        "tiff"
-    ]
-)
-# =====================================
-# PREDICTION
-# =====================================
+            with st.expander("Technical Details"):
 
-if uploaded_file is not None:
+                st.exception(e)
 
-    with st.spinner("🌊 Analyzing Satellite Image..."):
 
-        st.session_state.result = predict_image(uploaded_file)
-# =====================================
-# DETECTION RESULTS
-# =====================================
+# ============================================================
+# RESULTS
+# ============================================================
 
 if st.session_state.result is not None:
 
     result = st.session_state.result
 
-    st.markdown("## 🛰 Detection Results")
+    # ========================================================
+    # AI RESPONSE
+    # ========================================================
 
-    col1, col2, col3 = st.columns(3)
+    st.divider()
 
-    with col1:
-        st.image(result["original"], caption="Original")
+    st.subheader("HydroVision")
 
-    with col2:
-        st.image(result["overlay"], caption="Flood Overlay")
+    st.write(
+        "I've analyzed the satellite image using the "
+        "trained U-Net flood segmentation model."
+    )
 
-    with col3:
-        st.image(result["mask"], caption="Flood Mask")
-# =====================================
-# FLOOD ANALYSIS
-# =====================================
 
-if st.session_state.result is not None:
+    # ========================================================
+    # DETECTION RESULT
+    # ========================================================
 
-    result = st.session_state.result
+    st.subheader("Flood Detection Result")
 
-    st.markdown("## 🌊 Flood Analysis")
+    image_col1, image_col2 = st.columns(
+        2,
+        gap="large"
+    )
 
-    # Create the 2 columns
-    col1, col2 = st.columns(2)
+    # --------------------------------------------------------
+    # ORIGINAL IMAGE
+    # --------------------------------------------------------
 
-    with col1:
+    with image_col1:
 
-        st.markdown("""
-        <p style="font-size:18px;font-weight:600;">
-        🌊 Flood Coverage
-        </p>
-        """, unsafe_allow_html=True)
+        st.image(
+            result["original"],
+            caption="Original Satellite Image",
+            width=450
+        )
 
-        st.markdown(f"""
-        <p style="font-size:30px;font-weight:bold;color:#4F9DFF;">
-        {result["flood_percentage"]}
-        </p>
-        """, unsafe_allow_html=True)
+    # --------------------------------------------------------
+    # FLOOD DETECTION
+    # --------------------------------------------------------
 
-    
-    with col2:
+    with image_col2:
 
-        st.markdown("""
-        <p style="font-size:18px;font-weight:600;">
-        ⚠️ Risk Level
-        </p>
-        """, unsafe_allow_html=True)
+        st.image(
+            result["overlay"],
+            caption="AI Flood Detection",
+            width=450
+        )
+
+
+    # ========================================================
+    # FLOOD ANALYSIS
+    # ========================================================
+
+    st.subheader("Flood Analysis")
+
+    stat1, stat2 = st.columns(2)
+
+    # --------------------------------------------------------
+    # FLOOD COVERAGE
+    # --------------------------------------------------------
+
+    with stat1:
+
+        st.metric(
+            "🌊 Flood Coverage",
+            result["flood_percentage"]
+        )
+
+    # --------------------------------------------------------
+    # RISK LEVEL
+    # --------------------------------------------------------
+
+    with stat2:
 
         risk = result["risk_level"]
 
-        if risk.lower() == "low":
-           st.success(risk)
+        if "low" in risk.lower():
 
-        elif risk.lower() == "moderate":
-            st.warning(risk)
+            st.success(
+                f"⚠️ Risk Level: {risk}"
+            )
+
+        elif "moderate" in risk.lower():
+
+            st.warning(
+                f"⚠️ Risk Level: {risk}"
+            )
 
         else:
-            st.error(risk)
-       
-# =====================================
-# RECOMMENDATIONS
-# =====================================
 
-if st.session_state.result is not None:
+            st.error(
+                f"⚠️ Risk Level: {risk}"
+            )
 
-    result = st.session_state.result
 
-    st.markdown("---")
-    st.markdown("## 💡 Recommendations")
+    # ========================================================
+    # RECOMMENDATION
+    # ========================================================
 
-    st.write(result["recommendation"])
-# =====================================
-# DOWNLOAD REPORT
-# =====================================
+    st.subheader("💡 Recommendation")
 
-if st.session_state.result is not None:
+    st.write(
+        result["recommendation"]
+    )
 
-    result = st.session_state.result
+
+    # ========================================================
+    # FLOOD MASK
+    # ========================================================
+
+    with st.expander("View Flood Segmentation Mask"):
+
+        st.image(
+            result["mask"],
+            caption="Predicted Flood Mask",
+            width=450
+        )
+
+
+    # ========================================================
+    # DOWNLOAD REPORT
+    # ========================================================
 
     report = f"""
-FloodGuard AI Report
-===============================
+HydroVision AI Report
+==============================
+
+Image : {st.session_state.uploaded_name}
 
 Flood Coverage : {result["flood_percentage"]}
 
-Risk Level     : {result["risk_level"]}
+Risk Level : {result["risk_level"]}
 
-----------------------------------------
+------------------------------
 
-Recommendations
+Recommendation
 
 {result["recommendation"]}
 
-----------------------------------------
+------------------------------
 
 Generated by HydroVision
+AI-Powered Satellite Flood Detection
 """
 
     st.download_button(
-
-        label="📥 Download ",
-
+        label="📥 Download Report",
         data=report,
-
         file_name="HydroVision_Report.txt",
-
-        mime="text/plain",
-
-        use_container_width=True
-
+        mime="text/plain"
     )
-# =====================================
+
+
+# ============================================================
 # FOOTER
-# =====================================
+# ============================================================
 
-st.markdown("---")
+st.divider()
 
-st.markdown(
-"""
-<div style="text-align:center; padding:10px 0;">
-
-<b>🌊 HydroVision</b>
-
-
-<small>
-Built using TensorFlow, U-Net & Streamlit
-</small>
-
-</div>
-""",
-unsafe_allow_html=True
+st.caption(
+    "🌊 HydroVision · AI-Powered Flood Detection · "
+    "U-Net + TensorFlow + Streamlit"
 )
