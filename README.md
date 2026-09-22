@@ -67,7 +67,7 @@ The application displays:
 Clone the repository:
 
 ```bash
-git clone https://github.com/AkshayaKarasani20/HydroVision.git
+git clone https://github.com/AkshayaKarasani20/FloodScan.git
 ```
 
 Install requirements:
